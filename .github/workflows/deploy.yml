@@ -18,7 +18,9 @@ env:
     github.ref_name) }}
 jobs:
   deploy:
-    if: ${{ github.event.action != 'closed' }}
+    # Repository secrets are not exposed to pull_request workflows from forks.
+    # Skip preview deploys for fork PRs rather than failing during state-store setup.
+    if: ${{ github.event.action != 'closed' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -37,6 +39,23 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install
+      - name: Validate deploy secrets
+        env:
+          ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
+          ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          missing=0
+          for name in ALCHEMY_PASSWORD ALCHEMY_STATE_TOKEN CLOUDFLARE_API_TOKEN; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions secret: $name"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -eq 1 ]; then
+            exit 1
+          fi
       - name: Deploy
         run: pnpm dlx alchemy deploy --stage ${{ env.STAGE }}
         env:
@@ -49,8 +68,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   cleanup:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed'
-      }}
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository }}
     permissions:
       id-token: write
       contents: read
@@ -69,6 +87,23 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install
+      - name: Validate cleanup secrets
+        env:
+          ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
+          ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          missing=0
+          for name in ALCHEMY_PASSWORD ALCHEMY_STATE_TOKEN CLOUDFLARE_API_TOKEN; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions secret: $name"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -eq 1 ]; then
+            exit 1
+          fi
       - name: Safety Check
         run: |-
           if [ "${{ env.STAGE }}" = "prod" ]; then
