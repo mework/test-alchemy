@@ -1,0 +1,21 @@
+{
+  "name": "temp-alchemy-app",
+  "version": "0.0.0",
+  "description": "Alchemy Typescript Project",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "deploy": "alchemy deploy",
+    "destroy": "alchemy destroy",
+    "dev": "alchemy dev",
+    "postinstall": "vibe-rules install codex"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250805.0",
+    "@types/node": "^24.0.3",
+    "alchemy": "0.90.0",
+    "miniflare": "^4.20250617.3",
+    "typescript": "^5.8.3",
+    "vibe-rules": "^0.3.91"
+  }
+}
