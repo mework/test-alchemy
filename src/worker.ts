@@ -6,6 +6,6 @@ export default {
     env: typeof worker.Env,
     ctx: ExecutionContext,
   ): Promise<Response> {
-    return new Response("Hello World from my-alchemy-app!");
+    return new Response("Hello World from my-alchemy-app!测试");
   },
 };
